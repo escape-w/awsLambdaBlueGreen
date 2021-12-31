@@ -1,0 +1,39 @@
+aws ec2 describe-instances --region us-east-2 --output table
+
+aws ec2 describe-instances --query "Reservations[*].Instances[*].{PublicIP:PublicIpAddress,Name:Tags[?Key=='Name']|[0].Value,Status:State.Name}" --filters Name=instance-state-name,Values=running --output table
+
+aws ec2 describe-instances --query "Reservations[*].Instances[*].{PublicIP:PublicIpAddress,Type:InstanceType,Name:Tags[?Key=='Name']|[0].Value,Status:State.Name}" --filters "Name=instance-state-name,Values=running" "Name=tag:Name,Values='*'" --output table
+
+
+aws lambda create-function --function-name function2 --zip-file  fileb://./lambda_function1.zip --handler lambda_function.lambda_handler --runtime python3.9 --role arn:aws:iam::475600362560:role/service-role/awsLambdaBlueGreen --timeout 10 --environment "Variables={region=us-east-2}" --publish
+##uploading code in aws lambda with versioning
+
+aws lambda update-function-code --function-name function2 --zip-file "fileb://./lambda_function1.zip" --publish
+##updating code with incremental version
+
+
+Note: Now we have two versions in same environment 
+
+aws lambda create-alias --function-name function2 --function-version 1 --name dev --description "This is alias for dev"
+##creating alias pointing to version 1, nothing more
+
+aws lambda update-alias --name dev --function-name function2 --routing-config 'AdditionalVersionWeights={"2"=0.5}'
+##updating present alias with routing weightage (traffic routing)
+
+aws lambda create-alias --name qa --function-name function2 --function-version 1 --routing-config 'AdditionalVersionWeights={"2"=0.03}'
+##creating alias with routing weightage (traffic routing)
+
+aws lambda update-alias --name dev --function-name function2 --routing-config 'AdditionalVersionWeights={"2"=0.5}'
+aws lambda update-alias --name dev --function-name function2 --function-version 2 --routing-config 'AdditionalVersionWeights={}'
+
+------------------------------------------------------------------------
+10 min -> after monitoring(automate) then switch to real case
+
+api gateway api stages
+
+monitoring how we check which is right time for max shift
+
+automated way for full shift either ci\cd or script
+
+
+https://stackoverflow.com/questions/60966599/default-parameters-in-nested-yaml-pipeline-azure-devops
